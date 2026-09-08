@@ -1,0 +1,12 @@
+# Block access to all files except edit.php
+<FilesMatch "\.(txt|yaml|md|php)$">
+    Order Deny,Allow
+    Deny from all
+    Allow from localhost
+</FilesMatch>
+
+# Allow access to edit.php specifically
+<Files "edit.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
