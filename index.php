@@ -12,20 +12,25 @@
         <form action="process_form.php" method="POST">
             <div class="form-group">
                 <label for="event_name">Event Name:</label>
-                <select id="event_name" name="event_name" required>
+                <select id="event_name" name="event" required>
                     <option value="">Select an event</option>
-                    <option value="Birthday Party">Birthday Party</option>
-                    <option value="School Play">School Play</option>
-                    <option value="Summer Camp">Summer Camp</option>
-                    <option value="Community Fair">Community Fair</option>
-                    <option value="Holiday Celebration">Holiday Celebration</option>
+                    <?php
+                    // Load events from config/events.txt
+                    $eventsFile = 'config/events.txt';
+                    if (file_exists($eventsFile)) {
+                        $events = file($eventsFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                        foreach ($events as $event) {
+                            echo "<option value='" . htmlspecialchars($event) . "'>" . htmlspecialchars($event) . "</option>";
+                        }
+                    }
+                    ?>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="name">Name:</label>
                 <input type="text" id="name" name="name" required value="<?php 
-                    $names = file('names.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                    $names = file('config/names.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
                     if (!empty($names)) {
                         $random_name = $names[array_rand($names)];
                         $random_number = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
