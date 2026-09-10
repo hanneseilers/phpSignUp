@@ -95,7 +95,7 @@ function buildCsvRow(array $fields) {
 // that travels as hidden fields from process_form.php to send_confirmation.php,
 // so that endpoint can tell a genuine post-registration request from a forged one.
 function getMailTokenSecret() {
-    $secretFile = __DIR__ . '/config/mail_token_secret.php';
+    $secretFile = __DIR__ . '/mail_token_secret.php';
     if (!file_exists($secretFile)) {
         $secret = bin2hex(random_bytes(32));
         // Write to a unique temp file and rename it into place: rename() is

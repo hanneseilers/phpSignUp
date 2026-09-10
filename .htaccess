@@ -1,0 +1,6 @@
+# Block direct web access to the HMAC secret used to sign the confirmation
+# email flow (functions.php: getMailTokenSecret) - it's only ever meant to be
+# require()'d from PHP, never requested directly.
+<Files "mail_token_secret.php">
+    Require all denied
+</Files>
