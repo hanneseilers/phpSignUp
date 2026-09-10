@@ -61,3 +61,21 @@ input[type="number"] {
 .form-row .form-group {
     flex: 1;
 }
+.lang-switch {
+    text-align: right;
+    margin-bottom: 15px;
+}
+.lang-switch label {
+    display: inline;
+    font-weight: normal;
+    margin-right: 5px;
+}
+.lang-switch select {
+    width: auto;
+    display: inline-block;
+}
+.event-preselected-note {
+    margin: 5px 0 0;
+    font-size: 13px;
+    color: #777;
+}
