@@ -96,7 +96,7 @@ if (empty($errors)) {
                 <button type="submit" class="submit-btn"><?php echo htmlspecialchars(t('common.send_confirmation_button')); ?></button>
             </form>
 
-            <a href="index.php" class="btn"><?php echo htmlspecialchars(t('common.register_another')); ?></a>
+            <p><a href="index.php" class="btn">&larr; <?php echo htmlspecialchars(t('common.register_another')); ?></a></p>
         <?php
     } else {
         ?>

@@ -7,10 +7,10 @@ function loadSmtpConfig($envFile) {
     $env = file_exists($envFile) ? parse_ini_file($envFile) : [];
     return [
         'host' => $env['SMTP_HOST'] ?? '',
-        'port' => (int) ($env['SMTP_PORT'] ?? 587),
+        'port' => (int) ($env['SMTP_PORT'] ?? 465),
         'username' => $env['SMTP_USERNAME'] ?? '',
         'password' => $env['SMTP_PASSWORD'] ?? '',
-        'encryption' => strtolower($env['SMTP_ENCRYPTION'] ?? 'tls'),
+        'encryption' => strtolower($env['SMTP_ENCRYPTION'] ?? 'ssl'),
         'from_email' => $env['SMTP_FROM_EMAIL'] ?? 'no-reply@event.com',
         'from_name' => $env['SMTP_FROM_NAME'] ?? 'Event Team',
     ];
@@ -20,8 +20,13 @@ function loadSmtpConfig($envFile) {
 // host configured, otherwise fall back to PHP's built-in mail().
 function sendPlainTextEmail($to, $subject, $body, array $smtpConfig) {
     if (empty($smtpConfig['host'])) {
-        $headers = 'From: ' . $smtpConfig['from_name'] . ' <' . $smtpConfig['from_email'] . ">\r\n";
-        return mail($to, $subject, $body, $headers);
+        // Declare UTF-8 explicitly and RFC 2047-encode the subject - unlike
+        // PHPMailer below, mail() doesn't infer or apply either on its own,
+        // which otherwise turns every umlaut into mojibake for the recipient.
+        $headers = 'From: ' . $smtpConfig['from_name'] . ' <' . $smtpConfig['from_email'] . ">\r\n"
+            . "MIME-Version: 1.0\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n";
+        return mail($to, mb_encode_mimeheader($subject, 'UTF-8'), $body, $headers);
     }
 
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
@@ -29,6 +34,7 @@ function sendPlainTextEmail($to, $subject, $body, array $smtpConfig) {
         $mail->isSMTP();
         $mail->Host = $smtpConfig['host'];
         $mail->Port = $smtpConfig['port'];
+        $mail->CharSet = \PHPMailer\PHPMailer\PHPMailer::CHARSET_UTF8;
         if (!empty($smtpConfig['username'])) {
             $mail->SMTPAuth = true;
             $mail->Username = $smtpConfig['username'];

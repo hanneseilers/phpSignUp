@@ -19,7 +19,7 @@ form:
 common:
     email_label: "E-Mail-Adresse:"
     send_confirmation_button: "Bestätigungsmail senden"
-    register_another: "Weitere Person anmelden"
+    register_another: "Weitere Anmeldung absenden"
     back_to_form: "Zurück zum Formular"
 
 registration:
@@ -30,11 +30,11 @@ registration:
     error_invalid_event: "Ungültiges Angebot ausgewählt"
     error_min_adults: "Es muss mindestens 1 Erwachsener angegeben werden"
     success_heading: "Anmeldung erfolgreich!"
-    success_message: "Vielen Dank für Ihre Anmeldung zum Angebot {event}."
+    success_message: "Vielen Dank für deine Anmeldung zum Angebot {event}."
     failure_heading: "Anmeldung fehlgeschlagen!"
-    failure_message: "Bei der Verarbeitung Ihrer Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+    failure_message: "Bei der Verarbeitung deiner Anmeldung ist ein Fehler aufgetreten. Bitte versuche es erneut."
     confirmation_heading: "Bestätigungsmail"
-    confirmation_intro: "Wenn Sie eine Bestätigung Ihrer Anmeldedaten per E-Mail erhalten möchten, geben Sie hier Ihre Adresse ein. Diese wird ausschließlich für den Versand dieser E-Mail verwendet und nicht gespeichert."
+    confirmation_intro: "Wenn du eine Bestätigung deiner Anmeldedaten per E-Mail erhalten möchtest, gib hier deine Adresse ein. Diese wird ausschließlich für den Versand dieser E-Mail verwendet und nicht gespeichert."
     details_heading: "Anmeldedetails"
 
 confirmation:
@@ -42,18 +42,18 @@ confirmation:
     error_heading: "Fehler"
     error_name_missing: "Name fehlt"
     error_invalid_event: "Ungültiges Angebot"
-    error_invalid_email: "Bitte geben Sie eine gültige E-Mail-Adresse ein"
+    error_invalid_email: "Bitte gib eine gültige E-Mail-Adresse ein"
     error_invalid_request: "Ungültige oder abgelaufene Anfrage."
     sent_heading: "Bestätigungsmail versendet"
-    sent_message: "Wir haben Ihnen eine Bestätigung mit Ihren Anmeldedaten per E-Mail zugeschickt."
+    sent_message: "Wir haben dir eine Bestätigung mit deinen Anmeldedaten per E-Mail zugeschickt."
     failed_heading: "Versand fehlgeschlagen"
-    failed_message: "Die Bestätigungsmail konnte nicht versendet werden. Bitte versuchen Sie es erneut."
+    failed_message: "Die Bestätigungsmail konnte nicht versendet werden. Bitte versuche es erneut."
 
 mail:
-    subject: "Bestätigung Ihrer Anmeldung"
-    intro: "Vielen Dank für Ihre Anmeldung!"
+    subject: "Bestätigung deiner Anmeldung"
+    intro: "Vielen Dank für deine Anmeldung!"
     regards: "Mit freundlichen Grüßen,"
-    team: "Ihr Event-Team"
+    team: "Dein Event-Team"
 
 details:
     date: "Datum/Uhrzeit"
