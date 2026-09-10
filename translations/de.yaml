@@ -35,6 +35,7 @@ registration:
     failure_message: "Bei der Verarbeitung Ihrer Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
     confirmation_heading: "Bestätigungsmail"
     confirmation_intro: "Wenn Sie eine Bestätigung Ihrer Anmeldedaten per E-Mail erhalten möchten, geben Sie hier Ihre Adresse ein. Diese wird ausschließlich für den Versand dieser E-Mail verwendet und nicht gespeichert."
+    details_heading: "Anmeldedetails"
 
 confirmation:
     page_title: "Bestätigungsmail"
@@ -51,11 +52,14 @@ confirmation:
 mail:
     subject: "Bestätigung Ihrer Anmeldung"
     intro: "Vielen Dank für Ihre Anmeldung!"
+    regards: "Mit freundlichen Grüßen,"
+    team: "Ihr Event-Team"
+
+details:
+    date: "Datum/Uhrzeit"
     name: "Name"
     event: "Angebot"
     num_adults: "Anzahl Erwachsene"
     num_children: "Anzahl Kinder"
     children_ages: "Alter der Kinder"
     comments: "Kommentare"
-    regards: "Mit freundlichen Grüßen,"
-    team: "Ihr Event-Team"

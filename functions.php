@@ -81,6 +81,14 @@ function sanitizeCsvField($value) {
     return $value;
 }
 
+// Header row written once, the first time the CSV file is created. Fixed to
+// German regardless of the submitter's UI language, since the file is read
+// by the organizer, not the person registering, and must stay consistent
+// once written.
+function csvHeaderRow() {
+    return buildCsvRow(['Datum', 'Name', 'Angebot', 'Anzahl Erwachsene', 'Anzahl Kinder', 'Alter der Kinder', 'Kommentare']);
+}
+
 // Function to turn a registration into a properly escaped CSV row
 function buildCsvRow(array $fields) {
     $stream = fopen('php://temp', 'r+');
@@ -113,8 +121,8 @@ function getMailTokenSecret() {
 }
 
 // Compute the signature for a set of registration fields
-function buildRegistrationToken($name, $event, $num_adults, $num_children, $children_ages, $comments) {
-    $payload = implode('|', [$name, $event, $num_adults, $num_children, $children_ages, $comments]);
+function buildRegistrationToken($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments) {
+    $payload = implode('|', [$registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments]);
     return hash_hmac('sha256', $payload, getMailTokenSecret());
 }
 
@@ -182,9 +190,9 @@ function releaseWebdavLock($url, $authHeader, $lockToken) {
 }
 
 // Function to store data in CSV file via WebDAV
-function storeData($name, $event, $num_adults, $num_children, $children_ages, $comments, $webdavUrl, $webdavUser, $webdavPass, $csvFile) {
+function storeData($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments, $webdavUrl, $webdavUser, $webdavPass, $csvFile) {
     $row = buildCsvRow([
-        date('Y-m-d H:i:s'),
+        $registrationDate,
         sanitizeCsvField($name),
         sanitizeCsvField($event),
         $num_adults,
@@ -219,6 +227,9 @@ function storeData($name, $event, $num_adults, $num_children, $children_ages, $c
     $statusOk = (bool) preg_match('#^HTTP/\S+\s+2\d\d#', $statusLine);
     if ($existing === false || !$statusOk) {
         $existing = '';
+    }
+    if ($existing === '') {
+        $existing = csvHeaderRow();
     }
 
     $putContext = stream_context_create([

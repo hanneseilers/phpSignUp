@@ -35,6 +35,7 @@ registration:
     failure_message: "There was an error processing your registration. Please try again."
     confirmation_heading: "Confirmation email"
     confirmation_intro: "If you would like a confirmation email with your registration details, enter your address below. It is used only to send this one email and is not stored anywhere."
+    details_heading: "Registration Details"
 
 confirmation:
     page_title: "Confirmation Email"
@@ -51,11 +52,14 @@ confirmation:
 mail:
     subject: "Registration Confirmation"
     intro: "Thank you for registering!"
+    regards: "Best regards,"
+    team: "Event Team"
+
+details:
+    date: "Date/Time"
     name: "Name"
     event: "Event"
     num_adults: "Number of adults"
     num_children: "Number of children"
     children_ages: "Age of children"
     comments: "Comments"
-    regards: "Best regards,"
-    team: "Event Team"

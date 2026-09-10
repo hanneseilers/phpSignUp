@@ -48,20 +48,40 @@ if ($num_adults < 1) {
 
 // If no errors, process the form
 if (empty($errors)) {
+    // Fixed once here so the value shown to the user, the value emailed
+    // later, and the value actually written to the CSV are all identical.
+    $registrationDate = date('Y-m-d H:i:s');
+
     // Store data in CSV file via WebDAV
-    $success = storeData($name, $event, $num_adults, $num_children, $children_ages, $comments, $webdavUrl, $webdavUser, $webdavPass, $csvFile);
+    $success = storeData($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments, $webdavUrl, $webdavUser, $webdavPass, $csvFile);
 
     if ($success) {
         // Sign the registration fields so send_confirmation.php can verify
         // the confirmation-email request really came from this registration.
-        $token = buildRegistrationToken($name, $event, $num_adults, $num_children, $children_ages, $comments);
+        $token = buildRegistrationToken($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments);
         ?>
             <h2><?php echo htmlspecialchars(t('registration.success_heading')); ?></h2>
             <p><?php echo htmlspecialchars(t('registration.success_message', ['event' => $event])); ?></p>
 
+            <h3><?php echo htmlspecialchars(t('registration.details_heading')); ?></h3>
+            <ul class="registration-details">
+                <li><strong><?php echo htmlspecialchars(t('details.date')); ?>:</strong> <?php echo htmlspecialchars($registrationDate); ?></li>
+                <li><strong><?php echo htmlspecialchars(t('details.name')); ?>:</strong> <?php echo htmlspecialchars($name); ?></li>
+                <li><strong><?php echo htmlspecialchars(t('details.event')); ?>:</strong> <?php echo htmlspecialchars($event); ?></li>
+                <li><strong><?php echo htmlspecialchars(t('details.num_adults')); ?>:</strong> <?php echo (int) $num_adults; ?></li>
+                <li><strong><?php echo htmlspecialchars(t('details.num_children')); ?>:</strong> <?php echo (int) $num_children; ?></li>
+                <?php if ($children_ages !== ''): ?>
+                    <li><strong><?php echo htmlspecialchars(t('details.children_ages')); ?>:</strong> <?php echo htmlspecialchars($children_ages); ?></li>
+                <?php endif; ?>
+                <?php if ($comments !== ''): ?>
+                    <li><strong><?php echo htmlspecialchars(t('details.comments')); ?>:</strong> <?php echo htmlspecialchars($comments); ?></li>
+                <?php endif; ?>
+            </ul>
+
             <h3><?php echo htmlspecialchars(t('registration.confirmation_heading')); ?></h3>
             <p><?php echo htmlspecialchars(t('registration.confirmation_intro')); ?></p>
             <form action="send_confirmation.php" method="POST">
+                <input type="hidden" name="registration_date" value="<?php echo htmlspecialchars($registrationDate); ?>">
                 <input type="hidden" name="name" value="<?php echo htmlspecialchars($name); ?>">
                 <input type="hidden" name="event" value="<?php echo htmlspecialchars($event); ?>">
                 <input type="hidden" name="num_adults" value="<?php echo (int) $num_adults; ?>">
