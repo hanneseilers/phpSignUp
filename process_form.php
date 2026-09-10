@@ -42,6 +42,9 @@ if (empty($event)) {
 } elseif (!validateEvent($event, 'config/events.txt')) {
     $errors[] = t('registration.error_invalid_event');
 }
+if ($num_adults < 1) {
+    $errors[] = t('registration.error_min_adults');
+}
 
 // If no errors, process the form
 if (empty($errors)) {

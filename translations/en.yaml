@@ -28,6 +28,7 @@ registration:
     error_name_required: "Name is required"
     error_event_required: "Event is required"
     error_invalid_event: "Invalid event selected"
+    error_min_adults: "At least 1 adult is required"
     success_heading: "Registration Successful!"
     success_message: "Thank you for registering for the {event} event."
     failure_heading: "Registration Failed!"

@@ -66,7 +66,7 @@ currentLanguage();
             <div class="form-row">
                 <div class="form-group">
                     <label for="num_adults"><?php echo htmlspecialchars(t('form.num_adults_label')); ?></label>
-                    <input type="number" id="num_adults" name="num_adults" min="0" value="0">
+                    <input type="number" id="num_adults" name="num_adults" min="1" value="1" required>
                 </div>
                 <div class="form-group">
                     <label for="num_children"><?php echo htmlspecialchars(t('form.num_children_label')); ?></label>
