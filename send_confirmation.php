@@ -104,9 +104,9 @@ if (!empty($errors)) {
     $bodyLines[] = t('mail.regards');
     $bodyLines[] = t('mail.team');
     $body = implode("\n", $bodyLines);
-    $headers = "From: no-reply@event.com\r\n";
 
-    $sent = mail($email, t('mail.subject'), $body, $headers);
+    $smtpConfig = loadSmtpConfig('config/.env');
+    $sent = sendPlainTextEmail($email, t('mail.subject'), $body, $smtpConfig);
 
     if ($sent) {
         ?>

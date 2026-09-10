@@ -28,6 +28,8 @@ A simple web-based event registration form with WebDAV storage.
    - `WEBDAV_USERNAME` - WebDAV username
    - `WEBDAV_PASSWORD` - WebDAV password
    - `WEBDAV_FILE_PATH` - CSV file name/path on the WebDAV server
+   - `SMTP_*` - optional SMTP settings for the confirmation email; leave
+     `SMTP_HOST` empty to send via the server's local `mail()` instead
 
 2. Ensure `config/events.txt` contains the list of selectable events and
    `config/names.txt` contains the list of names used for the placeholder value
