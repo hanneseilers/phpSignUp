@@ -1,10 +1,31 @@
 <?php
 require_once __DIR__ . '/vendor/autoload.php';
 
-// Read the SMTP settings from config/.env. SMTP_HOST empty/missing means
-// "not configured" - sendPlainTextEmail() then falls back to PHP's mail().
-function loadSmtpConfig($envFile) {
-    $env = file_exists($envFile) ? parse_ini_file($envFile) : [];
+// Central config file locations, resolved relative to this file so they don't
+// depend on the include caller's current working directory.
+define('EVENTS_FILE', __DIR__ . '/config/events.txt');
+define('NAMES_FILE', __DIR__ . '/config/names.txt');
+define('ENV_FILE', __DIR__ . '/config/.env');
+
+// Sanity cap on the head-count fields - generous enough for any real
+// registration, low enough to keep a single bad/malicious submission from
+// bloating the CSV.
+define('MAX_PARTICIPANTS', 50);
+
+// Timeout (seconds) applied to every WebDAV HTTP request, so an unreachable
+// or slow WebDAV server can't hang a registration request indefinitely.
+define('WEBDAV_TIMEOUT_SECONDS', 10);
+
+// Parse a config/.env-style file into a key => value array, or [] if it
+// doesn't exist. Shared by loadSmtpConfig() and loadWebdavConfig().
+function loadEnvConfig($envFile) {
+    return file_exists($envFile) ? parse_ini_file($envFile) : [];
+}
+
+// Read the SMTP settings from an already-loaded .env array. SMTP_HOST
+// empty/missing means "not configured" - sendPlainTextEmail() then falls
+// back to PHP's mail().
+function loadSmtpConfig(array $env) {
     return [
         'host' => $env['SMTP_HOST'] ?? '',
         'port' => (int) ($env['SMTP_PORT'] ?? 465),
@@ -13,6 +34,16 @@ function loadSmtpConfig($envFile) {
         'encryption' => strtolower($env['SMTP_ENCRYPTION'] ?? 'ssl'),
         'from_email' => $env['SMTP_FROM_EMAIL'] ?? 'no-reply@event.com',
         'from_name' => $env['SMTP_FROM_NAME'] ?? 'Event Team',
+    ];
+}
+
+// Read the WebDAV settings from an already-loaded .env array.
+function loadWebdavConfig(array $env) {
+    return [
+        'url' => $env['WEBDAV_URL'] ?? '',
+        'username' => $env['WEBDAV_USERNAME'] ?? '',
+        'password' => $env['WEBDAV_PASSWORD'] ?? '',
+        'csv_file' => $env['WEBDAV_FILE_PATH'] ?? 'registrations.csv',
     ];
 }
 
@@ -57,13 +88,21 @@ function sendPlainTextEmail($to, $subject, $body, array $smtpConfig) {
     }
 }
 
-// Function to generate a random name from the names.txt file
+// Pick a random name from the names.txt file, or '' if none are available.
 function getRandomName($namesFile) {
     $names = file($namesFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if (empty($names)) {
-        return "No names available";
+    return empty($names) ? '' : $names[array_rand($names)];
+}
+
+// Suggest a random "<name>_<3-digit-number>" placeholder value for the
+// registration form's name field.
+function suggestRegistrationName($namesFile) {
+    $name = getRandomName($namesFile);
+    if ($name === '') {
+        return '';
     }
-    return $names[array_rand($names)];
+    $number = str_pad((string) rand(1, 999), 3, '0', STR_PAD_LEFT);
+    return $name . '_' . $number;
 }
 
 // Load the list of allowed events from config/events.txt
@@ -126,10 +165,49 @@ function getMailTokenSecret() {
     return require $secretFile;
 }
 
-// Compute the signature for a set of registration fields
-function buildRegistrationToken($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments) {
-    $payload = implode('|', [$registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments]);
+// Compute the signature for a registration's fields.
+function buildRegistrationToken(array $registration) {
+    $payload = implode('|', [
+        $registration['date'],
+        $registration['name'],
+        $registration['event'],
+        $registration['num_adults'],
+        $registration['num_children'],
+        $registration['children_ages'],
+        $registration['comments'],
+    ]);
     return hash_hmac('sha256', $payload, getMailTokenSecret());
+}
+
+// Echo the hidden <input> fields carrying a signed registration + token,
+// shared by process_form.php's success page and send_confirmation.php's forms.
+function renderRegistrationHiddenFields(array $registration, $token) {
+    ?>
+    <input type="hidden" name="registration_date" value="<?php echo htmlspecialchars($registration['date']); ?>">
+    <input type="hidden" name="name" value="<?php echo htmlspecialchars($registration['name']); ?>">
+    <input type="hidden" name="event" value="<?php echo htmlspecialchars($registration['event']); ?>">
+    <input type="hidden" name="num_adults" value="<?php echo (int) $registration['num_adults']; ?>">
+    <input type="hidden" name="num_children" value="<?php echo (int) $registration['num_children']; ?>">
+    <input type="hidden" name="children_ages" value="<?php echo htmlspecialchars($registration['children_ages']); ?>">
+    <input type="hidden" name="comments" value="<?php echo htmlspecialchars($registration['comments']); ?>">
+    <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
+    <?php
+}
+
+// Render the "enter email to receive a confirmation" form for a signed
+// registration. $required controls whether the browser enforces an email
+// being entered (used on the retry paths, once the visitor already opted in).
+function renderEmailForm(array $registration, $token, $email = '', $required = true) {
+    ?>
+    <form action="send_confirmation.php" method="POST">
+        <?php renderRegistrationHiddenFields($registration, $token); ?>
+        <div class="form-group">
+            <label for="email"><?php echo htmlspecialchars(t('common.email_label')); ?></label>
+            <input type="email" id="email" name="email"<?php echo $required ? ' required' : ''; ?> placeholder="you@example.com" value="<?php echo htmlspecialchars($email); ?>">
+        </div>
+        <button type="submit" class="submit-btn"><?php echo htmlspecialchars(t('common.send_confirmation_button')); ?></button>
+    </form>
+    <?php
 }
 
 // Try to acquire an exclusive WebDAV lock (RFC4918) on $url, retrying briefly
@@ -154,6 +232,7 @@ function acquireWebdavLock($url, $authHeader, $maxAttempts = 5, $retryDelayMicro
                     . "Timeout: Second-30\r\n"
                     . "Depth: 0\r\n",
                 'content' => $body,
+                'timeout' => WEBDAV_TIMEOUT_SECONDS,
                 'ignore_errors' => true
             ]
         ]);
@@ -189,26 +268,27 @@ function releaseWebdavLock($url, $authHeader, $lockToken) {
         'http' => [
             'method' => 'UNLOCK',
             'header' => $authHeader . "Lock-Token: {$lockToken}\r\n",
+            'timeout' => WEBDAV_TIMEOUT_SECONDS,
             'ignore_errors' => true
         ]
     ]);
     @file_get_contents($url, false, $context);
 }
 
-// Function to store data in CSV file via WebDAV
-function storeData($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments, $webdavUrl, $webdavUser, $webdavPass, $csvFile) {
+// Function to store a registration in the CSV file via WebDAV
+function storeData(array $registration, array $webdavConfig) {
     $row = buildCsvRow([
-        $registrationDate,
-        sanitizeCsvField($name),
-        sanitizeCsvField($event),
-        $num_adults,
-        $num_children,
-        sanitizeCsvField($children_ages),
-        sanitizeCsvField($comments)
+        $registration['date'],
+        sanitizeCsvField($registration['name']),
+        sanitizeCsvField($registration['event']),
+        $registration['num_adults'],
+        $registration['num_children'],
+        sanitizeCsvField($registration['children_ages']),
+        sanitizeCsvField($registration['comments'])
     ]);
 
-    $authHeader = "Authorization: Basic " . base64_encode("$webdavUser:$webdavPass") . "\r\n";
-    $url = rtrim($webdavUrl, '/') . '/' . $csvFile;
+    $authHeader = "Authorization: Basic " . base64_encode($webdavConfig['username'] . ':' . $webdavConfig['password']) . "\r\n";
+    $url = rtrim($webdavConfig['url'], '/') . '/' . $webdavConfig['csv_file'];
 
     // Hold an exclusive WebDAV lock across the GET-then-PUT append below so
     // two concurrent submissions can't both read the same "current" content
@@ -225,6 +305,7 @@ function storeData($registrationDate, $name, $event, $num_adults, $num_children,
         'http' => [
             'method' => 'GET',
             'header' => $authHeader,
+            'timeout' => WEBDAV_TIMEOUT_SECONDS,
             'ignore_errors' => true
         ]
     ]);
@@ -242,7 +323,8 @@ function storeData($registrationDate, $name, $event, $num_adults, $num_children,
         'http' => [
             'method' => 'PUT',
             'header' => $authHeader . $ifHeader . "Content-Type: text/csv\r\n",
-            'content' => $existing . $row
+            'content' => $existing . $row,
+            'timeout' => WEBDAV_TIMEOUT_SECONDS
         ]
     ]);
 

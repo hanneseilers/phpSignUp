@@ -15,32 +15,34 @@
 // other storage.
 require_once 'functions.php';
 
-$registrationDate = $_POST['registration_date'] ?? '';
-$name          = $_POST['name'] ?? '';
-$event         = $_POST['event'] ?? '';
-$num_adults    = (int) ($_POST['num_adults'] ?? 0);
-$num_children  = (int) ($_POST['num_children'] ?? 0);
-$children_ages = $_POST['children_ages'] ?? '';
-$comments      = $_POST['comments'] ?? '';
-$email         = trim($_POST['email'] ?? '');
-$token         = $_POST['token'] ?? '';
+$registration = [
+    'date' => $_POST['registration_date'] ?? '',
+    'name' => $_POST['name'] ?? '',
+    'event' => $_POST['event'] ?? '',
+    'num_adults' => (int) ($_POST['num_adults'] ?? 0),
+    'num_children' => (int) ($_POST['num_children'] ?? 0),
+    'children_ages' => $_POST['children_ages'] ?? '',
+    'comments' => $_POST['comments'] ?? '',
+];
+$email = trim($_POST['email'] ?? '');
+$token = $_POST['token'] ?? '';
 
 // The registration fields only ever arrive here as hidden fields coming from
 // process_form.php's success page. They are re-validated against the same
-// binding config/events.txt list process_form.php uses, and the token
-// (signed by process_form.php right after a successful registration) is
-// checked so this endpoint can't be used to email arbitrary made-up
-// "registration" content to arbitrary addresses.
+// binding events list process_form.php uses, and the token (signed by
+// process_form.php right after a successful registration) is checked so this
+// endpoint can't be used to email arbitrary made-up "registration" content to
+// arbitrary addresses.
 $errors = [];
-if (empty($name)) {
+if (empty($registration['name'])) {
     $errors[] = t('confirmation.error_name_missing');
 }
-$eventValid = !empty($event) && validateEvent($event, 'config/events.txt');
+$eventValid = !empty($registration['event']) && validateEvent($registration['event'], EVENTS_FILE);
 if (!$eventValid) {
     $errors[] = t('confirmation.error_invalid_event');
 }
 
-$expectedToken = buildRegistrationToken($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments);
+$expectedToken = buildRegistrationToken($registration);
 $tokenValid = hash_equals($expectedToken, $token);
 if (!$tokenValid) {
     $errors[] = t('confirmation.error_invalid_request');
@@ -48,26 +50,6 @@ if (!$tokenValid) {
 
 if (empty($errors) && (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
     $errors[] = t('confirmation.error_invalid_email');
-}
-
-function renderEmailForm($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments, $token, $email = '') {
-    ?>
-    <form action="send_confirmation.php" method="POST">
-        <input type="hidden" name="registration_date" value="<?php echo htmlspecialchars($registrationDate); ?>">
-        <input type="hidden" name="name" value="<?php echo htmlspecialchars($name); ?>">
-        <input type="hidden" name="event" value="<?php echo htmlspecialchars($event); ?>">
-        <input type="hidden" name="num_adults" value="<?php echo (int) $num_adults; ?>">
-        <input type="hidden" name="num_children" value="<?php echo (int) $num_children; ?>">
-        <input type="hidden" name="children_ages" value="<?php echo htmlspecialchars($children_ages); ?>">
-        <input type="hidden" name="comments" value="<?php echo htmlspecialchars($comments); ?>">
-        <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
-        <div class="form-group">
-            <label for="email"><?php echo htmlspecialchars(t('common.email_label')); ?></label>
-            <input type="email" id="email" name="email" required value="<?php echo htmlspecialchars($email); ?>">
-        </div>
-        <button type="submit" class="submit-btn"><?php echo htmlspecialchars(t('common.send_confirmation_button')); ?></button>
-    </form>
-    <?php
 }
 
 if (!empty($errors)) {
@@ -79,9 +61,9 @@ if (!empty($errors)) {
             <?php endforeach; ?>
         </ul>
     <?php
-    if ($tokenValid && !empty($name) && $eventValid) {
+    if ($tokenValid && !empty($registration['name']) && $eventValid) {
         // Registration data was genuine, only the email address needs fixing.
-        renderEmailForm($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments, $token, $email);
+        renderEmailForm($registration, $token, $email);
     } else {
         ?>
         <a href="index.php" class="btn"><?php echo htmlspecialchars(t('common.back_to_form')); ?></a>
@@ -91,24 +73,24 @@ if (!empty($errors)) {
     $bodyLines = [
         t('mail.intro'),
         '',
-        t('details.date') . ": $registrationDate",
-        t('details.name') . ": $name",
-        t('details.event') . ": $event",
-        t('details.num_adults') . ": $num_adults",
-        t('details.num_children') . ": $num_children",
+        t('details.date') . ": " . $registration['date'],
+        t('details.name') . ": " . $registration['name'],
+        t('details.event') . ": " . $registration['event'],
+        t('details.num_adults') . ": " . $registration['num_adults'],
+        t('details.num_children') . ": " . $registration['num_children'],
     ];
-    if ($children_ages !== '') {
-        $bodyLines[] = t('details.children_ages') . ": $children_ages";
+    if ($registration['children_ages'] !== '') {
+        $bodyLines[] = t('details.children_ages') . ": " . $registration['children_ages'];
     }
-    if ($comments !== '') {
-        $bodyLines[] = t('details.comments') . ": $comments";
+    if ($registration['comments'] !== '') {
+        $bodyLines[] = t('details.comments') . ": " . $registration['comments'];
     }
     $bodyLines[] = '';
     $bodyLines[] = t('mail.regards');
     $bodyLines[] = t('mail.team');
     $body = implode("\n", $bodyLines);
 
-    $smtpConfig = loadSmtpConfig('config/.env');
+    $smtpConfig = loadSmtpConfig(loadEnvConfig(ENV_FILE));
     $sent = sendPlainTextEmail($email, t('mail.subject'), $body, $smtpConfig);
 
     if ($sent) {
@@ -122,7 +104,7 @@ if (!empty($errors)) {
             <h2><?php echo htmlspecialchars(t('confirmation.failed_heading')); ?></h2>
             <p><?php echo htmlspecialchars(t('confirmation.failed_message')); ?></p>
         <?php
-        renderEmailForm($registrationDate, $name, $event, $num_adults, $num_children, $children_ages, $comments, $token, $email);
+        renderEmailForm($registration, $token, $email);
     }
 }
 ?>

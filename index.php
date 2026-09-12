@@ -31,8 +31,7 @@ currentLanguage();
                 // field to it - but only if it is actually one of the configured
                 // events; config/events.txt is the binding list, so an unknown
                 // or missing value just falls back to the normal full dropdown.
-                $eventsFile = 'config/events.txt';
-                $events = loadEvents($eventsFile);
+                $events = loadEvents(EVENTS_FILE);
                 $requestedEvent = is_string($_GET['event'] ?? null) ? trim($_GET['event']) : '';
                 $preselectedEvent = in_array($requestedEvent, $events, true) ? $requestedEvent : '';
                 ?>
@@ -53,24 +52,17 @@ currentLanguage();
 
             <div class="form-group">
                 <label for="name"><?php echo htmlspecialchars(t('form.name_label')); ?></label>
-                <input type="text" id="name" name="name" required value="<?php
-                    $names = file('config/names.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                    if (!empty($names)) {
-                        $random_name = $names[array_rand($names)];
-                        $random_number = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
-                        echo $random_name . '_' . $random_number;
-                    }
-                ?>">
+                <input type="text" id="name" name="name" required value="<?php echo htmlspecialchars(suggestRegistrationName(NAMES_FILE)); ?>">
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label for="num_adults"><?php echo htmlspecialchars(t('form.num_adults_label')); ?></label>
-                    <input type="number" id="num_adults" name="num_adults" min="1" value="1" required>
+                    <input type="number" id="num_adults" name="num_adults" min="1" max="<?php echo MAX_PARTICIPANTS; ?>" value="1" required>
                 </div>
                 <div class="form-group">
                     <label for="num_children"><?php echo htmlspecialchars(t('form.num_children_label')); ?></label>
-                    <input type="number" id="num_children" name="num_children" min="0" value="0">
+                    <input type="number" id="num_children" name="num_children" min="0" max="<?php echo MAX_PARTICIPANTS; ?>" value="0">
                 </div>
             </div>
 
